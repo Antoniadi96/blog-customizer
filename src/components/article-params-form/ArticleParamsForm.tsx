@@ -1,4 +1,4 @@
-import { FC, FormEvent, useEffect, useRef } from 'react';
+import { FC, FormEvent, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 
 import { ArrowButton } from 'src/ui/arrow-button';
@@ -12,49 +12,53 @@ import {
 	fontColors,
 	contentWidthArr,
 	backgroundColors,
+	defaultArticleState,
+	ArticleStateType,
 } from 'src/constants/articleProps';
-
-import type { ArticleStateType } from 'src/constants/articleProps';
 
 import styles from './ArticleParamsForm.module.scss';
 
 interface ArticleParamsFormProps {
-	isOpen: boolean;
-	settings: ArticleStateType;
-	onToggle: () => void;
-	onChange: (settings: ArticleStateType) => void;
-	onApply: () => void;
-	onReset: () => void;
+	articleStyles: ArticleStateType;
+	setArticleStyles: (value: ArticleStateType) => void;
 }
 
 export const ArticleParamsForm: FC<ArticleParamsFormProps> = ({
-	isOpen,
-	settings,
-	onToggle,
-	onChange,
-	onApply,
-	onReset,
+	articleStyles,
+	setArticleStyles,
 }) => {
+	const [formState, setFormState] = useState<ArticleStateType>(articleStyles);
+	const [isOpen, setIsOpen] = useState(false);
 	const asideRef = useRef<HTMLElement>(null);
 
-	const handleSubmit = (e: FormEvent) => {
+	const handleToggle = () => setIsOpen((prev) => !prev);
+
+	const handleApply = (e: FormEvent) => {
 		e.preventDefault();
-		onApply();
+		setArticleStyles(formState);
+		setIsOpen(false);
 	};
 
 	const handleReset = (e: FormEvent) => {
 		e.preventDefault();
-		onReset();
+		setFormState(defaultArticleState);
+		setArticleStyles(defaultArticleState);
+		setIsOpen(false);
 	};
 
 	useEffect(() => {
+		setFormState(articleStyles);
+	}, [articleStyles]);
+
+	useEffect(() => {
+		if (!isOpen) return;
+
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
 				asideRef.current &&
-				!asideRef.current.contains(event.target as Node) &&
-				isOpen
+				!asideRef.current.contains(event.target as Node)
 			) {
-				onToggle();
+				setIsOpen(false);
 			}
 		};
 
@@ -62,64 +66,59 @@ export const ArticleParamsForm: FC<ArticleParamsFormProps> = ({
 		return () => {
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, [isOpen, onToggle]);
+	}, [isOpen]);
 
 	return (
 		<>
-			<ArrowButton isOpen={isOpen} onClick={onToggle} />
+			<ArrowButton isOpen={isOpen} onClick={handleToggle} />
 			<aside
 				ref={asideRef}
 				className={clsx(styles.container, isOpen && styles.container_open)}>
 				<form
 					className={styles.form}
-					onSubmit={handleSubmit}
+					onSubmit={handleApply}
 					onReset={handleReset}>
 					<div className={styles.fields}>
 						<Select
 							title='Шрифт'
-							selected={settings.fontFamilyOption}
+							selected={formState.fontFamilyOption}
 							options={fontFamilyOptions}
 							onChange={(option) =>
-								onChange({ ...settings, fontFamilyOption: option })
+								setFormState({ ...formState, fontFamilyOption: option })
 							}
 						/>
-
 						<RadioGroup
 							name='fontSize'
 							title='Размер шрифта'
 							options={fontSizeOptions}
-							selected={settings.fontSizeOption}
+							selected={formState.fontSizeOption}
 							onChange={(option) =>
-								onChange({ ...settings, fontSizeOption: option })
+								setFormState({ ...formState, fontSizeOption: option })
 							}
 						/>
-
 						<Select
 							title='Цвет шрифта'
-							selected={settings.fontColor}
+							selected={formState.fontColor}
 							options={fontColors}
 							onChange={(option) =>
-								onChange({ ...settings, fontColor: option })
+								setFormState({ ...formState, fontColor: option })
 							}
 						/>
-
 						<hr className={styles.separator} />
-
 						<Select
 							title='Цвет фона'
-							selected={settings.backgroundColor}
+							selected={formState.backgroundColor}
 							options={backgroundColors}
 							onChange={(option) =>
-								onChange({ ...settings, backgroundColor: option })
+								setFormState({ ...formState, backgroundColor: option })
 							}
 						/>
-
 						<Select
 							title='Ширина контента'
-							selected={settings.contentWidth}
+							selected={formState.contentWidth}
 							options={contentWidthArr}
 							onChange={(option) =>
-								onChange({ ...settings, contentWidth: option })
+								setFormState({ ...formState, contentWidth: option })
 							}
 						/>
 					</div>

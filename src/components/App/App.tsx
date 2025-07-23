@@ -15,38 +15,39 @@ const STORAGE_KEY = 'appliedSettings';
 export const App = () => {
 	const [appliedSettings, setAppliedSettings] =
 		useState<ArticleStateType>(defaultArticleState);
-	const [formSettings, setFormSettings] =
-		useState<ArticleStateType>(defaultArticleState);
-	const [isSidebarOpen, setSidebarOpen] = useState(false);
+	const [isLoaded, setIsLoaded] = useState(false);
 
 	useEffect(() => {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		if (stored) {
 			try {
 				const parsed = JSON.parse(stored);
-				setAppliedSettings(parsed);
-				setFormSettings(parsed);
+				if (
+					parsed.fontFamilyOption &&
+					parsed.fontSizeOption &&
+					parsed.fontColor &&
+					parsed.contentWidth &&
+					parsed.backgroundColor
+				) {
+					setAppliedSettings(parsed);
+				} else {
+					setAppliedSettings(defaultArticleState);
+				}
 			} catch (e) {
+				console.warn('Ошибка парсинга localStorage:', e);
 				setAppliedSettings(defaultArticleState);
-				setFormSettings(defaultArticleState);
 			}
 		}
+		setIsLoaded(true);
 	}, []);
 
-	const handleApply = () => {
-		setAppliedSettings(formSettings);
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(formSettings));
-	};
+	useEffect(() => {
+		if (isLoaded) {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(appliedSettings));
+		}
+	}, [appliedSettings, isLoaded]);
 
-	const handleReset = () => {
-		setFormSettings(defaultArticleState);
-		setAppliedSettings(defaultArticleState);
-		localStorage.removeItem(STORAGE_KEY);
-	};
-
-	const handleToggleSidebar = () => setSidebarOpen(!isSidebarOpen);
-	const handleChangeSettings = (newSettings: ArticleStateType) =>
-		setFormSettings(newSettings);
+	if (!isLoaded) return null;
 
 	return (
 		<main
@@ -61,12 +62,8 @@ export const App = () => {
 				} as React.CSSProperties
 			}>
 			<ArticleParamsForm
-				isOpen={isSidebarOpen}
-				settings={formSettings}
-				onToggle={handleToggleSidebar}
-				onChange={handleChangeSettings}
-				onApply={handleApply}
-				onReset={handleReset}
+				articleStyles={appliedSettings}
+				setArticleStyles={setAppliedSettings}
 			/>
 			<Article />
 		</main>
